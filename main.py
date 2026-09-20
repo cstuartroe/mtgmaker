@@ -65,6 +65,9 @@ INVARIABLE_SYMBOLS = {
     "{Y}": Image.open("svg_gen/pngs/mtg/mana_Y.png"),
 }
 
+for pair in mtg.MANA_PAIRS:
+    INVARIABLE_SYMBOLS["{" + pair[0] + "/" + pair[1] + "}"] = Image.open(f"svg_gen/pngs/mtg/mana_{pair}.png")
+
 VARIABLE_SYMBOLS = {}
 
 for mana_count in [*range(10), "X"]:
@@ -105,7 +108,7 @@ RELEASE_LOGOS = {
 
 PT_BADGES = {
     color: Image.open(f"svg_gen/pngs/mtg/badge_pt_{color}.png")
-    for color in "BGRUWY"
+    for color in "BCGRUWY"
 }
 
 
@@ -130,6 +133,8 @@ light_camera_icon = convert_palette_color(camera_icon, 252, utils.Color.CREAM.va
 
 PHOTO_DESCRIPTION_Y = round(mtg.CARD_HEIGHT - mtg.BOTTOM_PADDING + .5*mtg.EM)
 
+
+GRADIENT_WIDTH = .1
 
 SET_SIZES = {
     "cts": 324,
@@ -190,6 +195,9 @@ class Card:
             pt=self.pt,
             photo_descriptor=new_photo_descriptor,
         )
+
+    def with_translation(self, *args, **kwargs):
+        return self, self.make_translation(*args, **kwargs)
 
 def add_text(draw: ImageDraw.ImageDraw, text: str, cursor: Cursor, language: str):
     font = FONTS[language]
@@ -270,7 +278,30 @@ def add_rules_text(img: Image.Image, draw: ImageDraw.ImageDraw, rules_text: str,
 
 
 def make_card(card: Card):
-    img = Image.open(f"svg_gen/pngs/mtg/frame_{card.frame}.png")
+    if "/" in card.frame:
+        img = Image.new("RGBA", (mtg.CARD_WIDTH, mtg.CARD_HEIGHT))
+
+        left_color, right_color = card.frame.split("/")
+        left_img = Image.open(f"svg_gen/pngs/mtg/frame_{left_color}_dual.png")
+        right_img = Image.open(f"svg_gen/pngs/mtg/frame_{right_color}_dual.png")
+
+        left_threshold = round(mtg.CARD_WIDTH*(.5 - GRADIENT_WIDTH))
+        right_threshold = mtg.CARD_WIDTH*(.5 + GRADIENT_WIDTH)
+
+        for x in range(mtg.CARD_WIDTH):
+            for y in range(mtg.CARD_HEIGHT):
+                if x < left_threshold:
+                    img.putpixel((x, y), left_img.getpixel((x, y)))
+                elif x > right_threshold:
+                    img.putpixel((x, y), right_img.getpixel((x, y)))
+                else:
+                    img.putpixel((x, y), (*utils.mix_rgb_colors(left_img.getpixel((x, y))[:3], right_img.getpixel((x, y))[:3], (right_threshold - x)/(right_threshold - left_threshold)), 255))
+
+        badge_color = "C"
+
+    else:
+        img = Image.open(f"svg_gen/pngs/mtg/frame_{card.frame}.png")
+        badge_color = card.frame
 
     draw = ImageDraw.Draw(img)
 
@@ -339,12 +370,12 @@ def make_card(card: Card):
     if card.pt:
         p, t = card.pt
         img.paste(
-            PT_BADGES[card.frame],
+            PT_BADGES[badge_color],
             (
                 mtg.CARD_WIDTH - mtg.PT_BADGE_WIDTH,
                 round(mtg.CARD_HEIGHT - mtg.BOTTOM_PADDING - mtg.BADGE_HEIGHT/2 - mtg.INTERNAL_BORDER_WIDTH/2),
             ),
-            mask=PT_BADGES[card.frame],
+            mask=PT_BADGES[badge_color],
         )
         draw.text(
             (mtg.CARD_WIDTH - mtg.PT_BADGE_WIDTH//2, mtg.CARD_HEIGHT - mtg.BOTTOM_PADDING),
@@ -409,7 +440,7 @@ class CardLibrary:
 
 CARDS = CardLibrary(
     [
-        Card(
+        *Card(
             set_id="cts",
             number_in_set=101,
             title="Whale Shark",
@@ -424,6 +455,44 @@ CARDS = CardLibrary(
             photo_descriptor="Whale Shark in La Paz, Mexico by Matthew T. Rader",
             cost=["2", "U"],
             pt=(0, 4),
+        ).with_translation(
+            new_language="lv",
+            new_title="pehuli",
+            new_card_type="binvtvM,ikvM",
+            new_rules_text=(
+                "tuqvego\n"
+                "vko-pu\u200bkvlileqv\n"
+                "ko-pu\u200b{2}\u200b"
+                "(la\u200bniepi\u200bi-di\u200bvitubinvtvM\u200bewvyvwvyv\u200bvtW\u200bdv\u200bvme-to\u200betuvyvti\u200b"
+                "do\u200btvkv\u200bnv\u200b"
+                "la\u200bpibutu\u200bgv\u200bv{2}\u200bi-ino\u200btuqvesi)"
+            ),
+            new_photo_descriptor="pehulinisolilvpvsilimekisikonipotoi-mvtiule-lv",
+        ),
+        Card(
+            set_id="cts",
+            number_in_set=275,
+            title="Bleeding Bonnet",
+            card_type="Instant",
+            frame="B/G",
+            image=CardImage(
+                # https://commons.wikimedia.org/wiki/File:Haematopus-on-oak.jpg
+                filename="Haematopus.jpg",
+            ),
+            photo_descriptor="Mycena haematopus in Samuel P. Taylor State Park, CA, USA by Alan Rockefeller",
+            cost=["B/G"],
+            rules_text="Place a -1/-1 counter on a creature that dealt combat damage to you this turn.",
+        ),
+        Card(
+            set_id="cts",
+            number_in_set=289,
+            title="Crankshaft",
+            card_type="Artifact",
+            frame="C",
+            image=CardImage(
+                filename="Striltsivskyi Steppe.jpg",
+            ),
+            photo_descriptor="A crankshaft"
         ),
         Card(
             set_id="cts",
@@ -449,7 +518,7 @@ CARDS = CardLibrary(
             ),
             photo_descriptor="Forzhaga Arch in Tadrart Acacus, Libya by Luca Galuzzi",
         ),
-        Card(
+        *Card(
             set_id="cts",
             number_in_set=309,
             title="Island",
@@ -461,6 +530,11 @@ CARDS = CardLibrary(
                 x=400,
             ),
             photo_descriptor="Addu Atoll, Maldives",
+        ).with_translation(
+            new_language="lv",
+            new_title="iru",
+            new_card_type="pvkvpaliwini,iru",
+            new_photo_descriptor="vtoluvdulidiwehi",
         ),
         Card(
             set_id="cts",
@@ -512,32 +586,6 @@ CARDS = CardLibrary(
             photo_descriptor="Guiana Amazonian Park, French Guiana by Melanie Dinane",
         ),
     ],
-)
-
-CARDS.add(
-    CARDS.find_by_identity(("cts", 309, "en")).make_translation(
-        new_language="lv",
-        new_title="iru",
-        new_card_type="pvkvpaliwini,iru",
-        new_photo_descriptor="vtoluvdulidiwehi",
-    ),
-)
-
-CARDS.add(
-    CARDS.find_by_title("Whale Shark").make_translation(
-        new_language="lv",
-        new_title="pehuli",
-        new_card_type="binvtvM,ikvM",
-        new_rules_text=(
-            "tuqvego\n"
-            "vko-pu\u200bkvlileqv\n"
-            "ko-pu\u200b{2}\u200b"
-            "(la\u200bniepi\u200bi-di\u200bvitubinvtvM\u200bewvyvwvyv\u200bvtW\u200bdv\u200bvme-to\u200betuvyvti\u200b"
-            "do\u200btvkv\u200bnv\u200b"
-            "la\u200bpibutu\u200bgv\u200bv{2}\u200bi-ino\u200btuqvesi)"
-        ),
-        new_photo_descriptor="pehulinisolilvpvsilimekisikonipotoi-mvtiule-lv",
-    )
 )
 
 
