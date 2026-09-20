@@ -103,7 +103,10 @@ RELEASE_LOGOS = {
 }
 
 
-PT_BADGE = Image.open("svg_gen/pngs/mtg/badge_pt.png")
+PT_BADGES = {
+    color: Image.open(f"svg_gen/pngs/mtg/badge_pt_{color}.png")
+    for color in "BGRUWY"
+}
 
 
 CAMERA_ICON_SIZE = round(mtg.MANA_SYMBOL_HEIGHT*.6)
@@ -159,9 +162,9 @@ class Card:
     title: str
     image: CardImage
     card_type: str
-    rules_text: str | None
-    flavor_text: str | None
     photo_descriptor: str
+    rules_text: str | None = None
+    flavor_text: str | None = None
     language: str = "en"
     cost: list[str] | None = None
     pt: tuple[int, int] | None = None
@@ -267,7 +270,7 @@ def add_rules_text(img: Image.Image, draw: ImageDraw.ImageDraw, rules_text: str,
 
 
 def make_card(card: Card):
-    img = Image.open(f"svg_gen/pngs/mtg/{card.frame}.png")
+    img = Image.open(f"svg_gen/pngs/mtg/frame_{card.frame}.png")
 
     draw = ImageDraw.Draw(img)
 
@@ -336,12 +339,12 @@ def make_card(card: Card):
     if card.pt:
         p, t = card.pt
         img.paste(
-            PT_BADGE,
+            PT_BADGES[card.frame],
             (
                 mtg.CARD_WIDTH - mtg.PT_BADGE_WIDTH,
                 round(mtg.CARD_HEIGHT - mtg.BOTTOM_PADDING - mtg.BADGE_HEIGHT/2 - mtg.INTERNAL_BORDER_WIDTH/2),
             ),
-            mask=PT_BADGE,
+            mask=PT_BADGES[card.frame],
         )
         draw.text(
             (mtg.CARD_WIDTH - mtg.PT_BADGE_WIDTH//2, mtg.CARD_HEIGHT - mtg.BOTTOM_PADDING),
@@ -411,7 +414,7 @@ CARDS = CardLibrary(
             number_in_set=101,
             title="Whale Shark",
             card_type="Creature — Fish",
-            frame="frame_U",
+            frame="U",
             rules_text="Defender\nProtection from yellow\nWard {2} (Whenever this creature becomes the target of a spell or ability an opponent controls, counter it unless that player pays {2}.)",
             flavor_text=None,
             image=CardImage(
@@ -427,9 +430,7 @@ CARDS = CardLibrary(
             number_in_set=301,
             title="Steppe",
             card_type="Basic Land — Steppe",
-            frame="frame_W",
-            rules_text="{T}: Add {W} to your mana pool.",
-            flavor_text=None,
+            frame="steppe",
             image=CardImage(
                 # https://commons.wikimedia.org/wiki/File:Філія_ЛПЗ_НАНУ_"Стрільцівський_степ"_Stipa_tirsa_(ЧКУ).jpg
                 filename="Striltsivskyi Steppe.jpg",
@@ -441,9 +442,7 @@ CARDS = CardLibrary(
             number_in_set=305,
             title="Desert",
             card_type="Basic Land — Desert",
-            frame="frame_Y",
-            rules_text="{T}: Add {Y} to your mana pool.",
-            flavor_text=None,
+            frame="desert",
             image=CardImage(
                 # https://commons.wikimedia.org/wiki/File:Libya_5101_Fozzigiaren_Arch_Tadrart_Acacus_Luca_Galuzzi_2007.jpg
                 filename="Forzhaga Arch.jpg",
@@ -455,9 +454,7 @@ CARDS = CardLibrary(
             number_in_set=309,
             title="Island",
             card_type="Basic Land — Island",
-            frame="frame_U",
-            rules_text="{T}: Add {U} to your mana pool.",
-            flavor_text=None,
+            frame="island",
             image=CardImage(
                 # https://www.liveaboard.com/nl/diving/maldives/addu-atoll
                 filename="Addu Atoll.webp",
@@ -470,9 +467,7 @@ CARDS = CardLibrary(
             number_in_set=313,
             title="Floodplain",
             card_type="Basic Land — Floodplain",
-            frame="frame_B",
-            rules_text="{T}: Add {B} to your mana pool.",
-            flavor_text=None,
+            frame="floodplain",
             image=CardImage(
                 # https://www.flickr.com/photos/150678186@N03/44653103312/
                 filename="Bac Son.jpg",
@@ -484,9 +479,7 @@ CARDS = CardLibrary(
             number_in_set=314,
             title="Floodplain",
             card_type="Basic Land — Floodplain",
-            frame="frame_B",
-            rules_text="{T}: Add {B} to your mana pool.",
-            flavor_text=None,
+            frame="floodplain",
             image=CardImage(
                 # https://maps.app.goo.gl/qHqVp4kt6GLWQ6st8
                 filename="Atchafalaya.jpg",
@@ -498,9 +491,7 @@ CARDS = CardLibrary(
             number_in_set=317,
             title="Mountain",
             card_type="Basic Land — Mountain",
-            frame="frame_R",
-            rules_text="{T}: Add {R} to your mana pool.",
-            flavor_text=None,
+            frame="mountain",
             image=CardImage(
                 # https://discoverrussia.travel/destinations/caucasus
                 filename="Elbrus.webp",
@@ -513,9 +504,7 @@ CARDS = CardLibrary(
             number_in_set=321,
             title="Forest",
             card_type="Basic Land — Forest",
-            frame="frame_G",
-            rules_text="{T}: Add {G} to your mana pool.",
-            flavor_text=None,
+            frame="forest",
             image=CardImage(
                 # https://commons.wikimedia.org/wiki/File:Parc_amazonien_de_Guyane,_une_balade_%C3%A0_Sa%C3%BCl.jpg
                 filename="Guiana Amazonian Park.jpg",
@@ -530,7 +519,6 @@ CARDS.add(
         new_language="lv",
         new_title="iru",
         new_card_type="pvkvpaliwini,iru",
-        new_rules_text="{T},bolvM\u200be\u200b{U}\u200bki-\u200bovtemu\u200bli\u200bmvnv",
         new_photo_descriptor="vtoluvdulidiwehi",
     ),
 )
