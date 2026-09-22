@@ -1,3 +1,6 @@
 [submodule "svg_gen"]
 	path = svg_gen
 	url = git@github.com:cstuartroe/svg_gen.git
+[submodule "six_conlangs"]
+	path = six_conlangs
+	url = git@github.com:cstuartroe/six-conlangs.git

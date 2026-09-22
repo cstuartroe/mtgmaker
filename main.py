@@ -4,6 +4,7 @@ import datetime
 from PIL import Image, ImageDraw, ImageFont
 from tqdm import tqdm
 
+from six_conlangs.src import blue
 from svg_gen.src import mtg, utils
 
 
@@ -43,7 +44,7 @@ FONTS = {
         mana_number_font=ImageFont.truetype("font/GentiumPlus-Regular.ttf", .7 * mtg.EM),
         photo_descriptor_font=ImageFont.truetype("font/GentiumPlus-Bold.ttf", .4*mtg.EM),
     ),
-    "lv": FontFamily(
+    "fa": FontFamily(
         title_font=ImageFont.truetype("font/LauvinkoHandwritten-UltraBold.ttf", 1.2*mtg.EM),
         rules_font=ImageFont.truetype("font/LauvinkoHandwritten-Normal.ttf", .85*mtg.EM),
         flavor_font=ImageFont.truetype("font/LauvinkoHandwritten-Normal.ttf", .85*mtg.EM),
@@ -51,6 +52,8 @@ FONTS = {
         photo_descriptor_font=ImageFont.truetype("font/LauvinkoHandwritten-SemiBold.ttf", .4*mtg.EM),
     ),
 }
+
+FONTS["far"] = FONTS["en"]
 
 set_number_font = ImageFont.truetype("font/GentiumPlus-Regular.ttf", .4*mtg.EM)
 
@@ -141,6 +144,16 @@ SET_SIZES = {
 }
 
 
+LANGUAGE_RENDERERS = {
+    "fa": (blue.render, "\u200b"),
+}
+
+def sjoin(lines: list[list[str]], space_char: str):
+    return "\n".join([
+        space_char.join(line)
+        for line in lines
+    ])
+
 @dataclasses.dataclass
 class Cursor:
     x: int
@@ -180,7 +193,7 @@ class Card:
     def slug(self):
         return f"{self.set_id}_{str(self.number_in_set).zfill(3)}_{self.language}_{self.title}"
 
-    def make_translation(self, new_language: str, new_title: str, new_card_type: str, new_rules_text: str | None = None, new_flavor_text: str | None = None, new_photo_descriptor: str = "") -> "Card":
+    def _translation(self, new_language: str, new_title: str, new_card_type: str, new_rules_text: str | None = None, new_flavor_text: str | None = None, new_photo_descriptor: str = "") -> "Card":
         return Card(
             title=new_title,
             set_id=self.set_id,
@@ -196,8 +209,34 @@ class Card:
             photo_descriptor=new_photo_descriptor,
         )
 
-    def with_translation(self, *args, **kwargs):
-        return self, self.make_translation(*args, **kwargs)
+    def with_translations_from_outlines(self, new_language: str, title_outline: str, card_type_outline: str, rules_text_outline: str = "", flavor_text_outline: str = "", photo_descriptor_outline: str = ""):
+        render_function, space_character = LANGUAGE_RENDERERS[new_language]
+
+        title = render_function(title_outline)
+        card_type = render_function(card_type_outline)
+        rules_text = render_function(rules_text_outline)
+        flavor_text = render_function(flavor_text_outline)
+        photo_descriptor = render_function(photo_descriptor_outline)
+
+        return [
+            self,
+            self._translation(
+                new_language=new_language + "r",
+                new_title=sjoin(title.romanization, " "),
+                new_card_type=sjoin(card_type.romanization, " "),
+                new_rules_text=sjoin(rules_text.romanization, " "),
+                new_flavor_text=sjoin(flavor_text.romanization, " "),
+                new_photo_descriptor=sjoin(photo_descriptor.romanization, " "),
+            ),
+            self._translation(
+                new_language=new_language,
+                new_title=sjoin(title.font_rendered, space_character),
+                new_card_type=sjoin(card_type.font_rendered, space_character),
+                new_rules_text=sjoin(rules_text.font_rendered, space_character),
+                new_flavor_text=sjoin(flavor_text.font_rendered, space_character),
+                new_photo_descriptor=sjoin(photo_descriptor.font_rendered, space_character),
+            ),
+        ]
 
 def add_text(draw: ImageDraw.ImageDraw, text: str, cursor: Cursor, language: str):
     font = FONTS[language]
@@ -455,19 +494,18 @@ CARDS = CardLibrary(
             photo_descriptor="Whale Shark in La Paz, Mexico by Matthew T. Rader",
             cost=["2", "U"],
             pt=(0, 4),
-        ).with_translation(
-            new_language="lv",
-            new_title="pehuli",
-            new_card_type="binvtvM,ikvM",
-            new_rules_text=(
-                "tuqvego\n"
-                "vko-pu\u200bkvlileqv\n"
-                "ko-pu\u200b{2}\u200b"
-                "(la\u200bniepi\u200bi-di\u200bvitubinvtvM\u200bewvyvwvyv\u200bvtW\u200bdv\u200bvme-to\u200betuvyvti\u200b"
-                "do\u200btvkv\u200bnv\u200b"
-                "la\u200bpibutu\u200bgv\u200bv{2}\u200bi-ino\u200btuqvesi)"
+        ).with_translations_from_outlines(
+            new_language="fa",
+            title_outline="Whale_shark",
+            card_type_outline="Animal — Fish",
+            rules_text_outline=(
+                "Er-defend\n"
+                "Pat.ipf-protect for yellow\n"
+                "Protect {2} "
+                "(if pat.pfv-become aim def.sg.dir this animal ndf.sg.ind magic or able pat.ipf-control ndf.sg.ind er-oppose "
+                "then age.ipr-stop 3rd.sg.ind if age.pfv-pay not def.sg.dir that er-oppose ins ndf.sg.gin {2})"
             ),
-            new_photo_descriptor="pehulinisolilvpvsilimekisikonipotoi-mvtiule-lv",
+            photo_descriptor_outline="Whale_shark at [rafa!si] Mexico pat.pfv-photo def.sg.dir [ma!tiu] [ree!ra]",
         ),
         Card(
             set_id="cts",
@@ -530,11 +568,11 @@ CARDS = CardLibrary(
                 x=400,
             ),
             photo_descriptor="Addu Atoll, Maldives",
-        ).with_translation(
-            new_language="lv",
-            new_title="iru",
-            new_card_type="pvkvpaliwini,iru",
-            new_photo_descriptor="vtoluvdulidiwehi",
+        ).with_translations_from_outlines(
+            new_language="fa",
+            title_outline="Island",
+            card_type_outline="Place Basic — Island",
+            photo_descriptor_outline="Atoll [a!ndu] Maldives",
         ),
         Card(
             set_id="cts",
